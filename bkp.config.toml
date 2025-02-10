@@ -1,5 +1,0 @@
-[build]
-target = "targets/x86_64-unknown-uefi.json"
-
-[unstable]
-build-std = ["core", "alloc"]
