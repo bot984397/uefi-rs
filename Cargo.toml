@@ -1,0 +1,15 @@
+[package]
+name = "efi-rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+spin = { version = "0.9.8" }
+
+[lib]
+name = "efi_rs"
+crate-type = ["rlib"]
+
+[features]
+global-alloc = []
+panic-handler = []
