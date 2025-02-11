@@ -7,6 +7,12 @@ extern crate alloc;
 #[cfg(feature = "global-alloc")]
 use alloc::vec::Vec;
 
+pub const EFI_SIMPLE_TEXT_INPUT_PROTOCOL_GUID: EfiGuid = EfiGuid {
+    data1: 0x387477c1,
+    data2: 0x69c7,
+    data3: 0x11d2,
+    data4: [0x8e,0x39,0x00,0xa0,0xc9,0x69,0x72,0x3b],
+};
 
 #[repr(C)]
 pub struct EfiSimpleTextInputProtocol {
@@ -32,8 +38,43 @@ impl SimpleTextInputProtocol {
         SimpleTextInputProtocol {
             protocol: unsafe { ThreadSafePtr::new(ptr) },
         }
-    } 
+    }
+
+    pub fn reset(&self, extended: BOOLEAN) -> Result<(), EfiStatus> {
+        let status = unsafe {
+            ((*self.protocol.as_ptr()).reset)(
+                self.protocol.as_ptr(),
+                extended,
+            )
+        };
+        efi_try!(status)
+    }
+
+    pub fn read_key_stroke(&self) -> Result<EfiInputKey, EfiStatus> {
+        let mut key: EfiInputKey = EfiInputKey {
+            scan_code: 0,
+            unicode_char: 0,
+        };
+        let status = unsafe {
+            ((*self.protocol.as_ptr()).read_key_stroke)(
+                self.protocol.as_ptr(),
+                &mut key,
+            )
+        };
+        if status.is_success() {
+            Ok(key)
+        } else {
+            Err(status)
+        }
+    }
 }
+
+pub const EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_GUID: EfiGuid = EfiGuid {
+    data1: 0x387477c2,
+    data2: 0x69c7,
+    data3: 0x11d2,
+    data4: [0x8e,0x39,0x00,0xa0,0xc9,0x69,0x72,0x3b],
+};
 
 #[repr(C)]
 pub struct EfiSimpleTextOutputProtocol {
@@ -51,6 +92,40 @@ pub struct EfiSimpleTextOutputProtocol {
         this: *mut EfiSimpleTextOutputProtocol,
         string: *mut CHAR16,
     ) -> EfiStatus,
+
+    query_mode: unsafe extern "efiapi" fn(
+        this: *mut EfiSimpleTextOutputProtocol,
+        mode_number: UINTN,
+        columns: *mut UINTN,
+        rows: *mut UINTN,
+    ) -> EfiStatus,
+
+    set_mode: unsafe extern "efiapi" fn(
+        this: *mut EfiSimpleTextOutputProtocol,
+        mode_number: UINTN,
+    ) -> EfiStatus,
+
+    set_attribute: unsafe extern "efiapi" fn(
+        this: *mut EfiSimpleTextOutputProtocol,
+        attribute: UINTN,
+    ) -> EfiStatus,
+
+    clear_screen: unsafe extern "efiapi" fn(
+        this: *mut EfiSimpleTextOutputProtocol,
+    ) -> EfiStatus,
+
+    set_cursor_position: unsafe extern "efiapi" fn(
+        this: *mut EfiSimpleTextOutputProtocol,
+        column: UINTN,
+        row: UINTN,
+    ) -> EfiStatus,
+
+    enable_cursor: unsafe extern "efiapi" fn(
+        this: *mut EfiSimpleTextOutputProtocol,
+        visible: BOOLEAN,
+    ) -> EfiStatus,
+
+
 }
 
 pub struct SimpleTextOutputProtocol {

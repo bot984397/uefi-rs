@@ -14,13 +14,16 @@ pub type CHAR16 = u16;
 pub type VOID = core::ffi::c_void;
 pub type PVOID = *mut core::ffi::c_void;
 
+pub const FALSE: BOOLEAN = 0;
+pub const TRUE: BOOLEAN = 1;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct EfiGuid {
-    data1: u32,
-    data2: u16,
-    data3: u16,
-    data4: [u8; 8],
+    pub data1: u32,
+    pub data2: u16,
+    pub data3: u16,
+    pub data4: [u8; 8],
 }
 
 pub type EfiHandle = PVOID;
@@ -49,6 +52,7 @@ pub struct EfiIpAddress {
 }
 
 #[repr(C)]
+#[derive(Copy, Clone, Debug)]
 pub struct EfiInputKey {
     pub scan_code: UINT16,
     pub unicode_char: CHAR16,
