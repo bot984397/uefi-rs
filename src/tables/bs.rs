@@ -53,16 +53,10 @@ pub struct EfiBootServices {
 }
 
 pub struct BootServices {
-    services: ThreadSafePtr<EfiBootServices>,
+    pub services: ThreadSafePtr<EfiBootServices>,
 }
 
 impl BootServices {
-    pub unsafe fn new(services: *mut EfiBootServices) -> Option<Self> {
-        Some(BootServices {
-            services: unsafe { ThreadSafePtr::new(services) }
-        })
-    }
-
     pub fn allocate_pool(&self, 
                          pool_type: EfiMemoryType,
                          size: UINTN

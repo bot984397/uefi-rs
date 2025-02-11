@@ -94,13 +94,9 @@ pub struct EfiRuntimeServices {
 }
 
 pub struct RuntimeServices {
-    services: ThreadSafePtr<EfiRuntimeServices>,
+    pub services: ThreadSafePtr<EfiRuntimeServices>,
 }
 
 impl RuntimeServices {
-    pub unsafe fn new(services: *mut EfiRuntimeServices) -> Option<Self> {
-        Some(RuntimeServices {
-            services: unsafe { ThreadSafePtr::new(services) }
-        })
-    }
+
 }

@@ -20,14 +20,10 @@ impl LayoutExt for Layout {
 
 unsafe impl GlobalAlloc for EfiAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let efi = match EfiLib::get() {
-            Some(efi) => efi,
-            None => return null_mut(),
-        };
 
         let size = layout.size().max(layout.get_uefi_alignment()) as UINTN;
 
-        match efi.boot_services.allocate_pool(
+        match BOOT_SERVICES.allocate_pool(
             EfiMemoryType::EfiLoaderData,
             size
         ) {
@@ -37,10 +33,8 @@ unsafe impl GlobalAlloc for EfiAllocator {
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
-        if let Some(efi) = EfiLib::get() {
-            if let Some(non_null) = core::ptr::NonNull::new(ptr as *mut VOID) {
-                let _ = efi.boot_services.free_pool(non_null);
-            }
+        if let Some(non_null) = core::ptr::NonNull::new(ptr as *mut VOID) {
+            let _ = BOOT_SERVICES.free_pool(non_null);
         }
     }
 

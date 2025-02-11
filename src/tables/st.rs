@@ -1,10 +1,12 @@
-use core::ptr::NonNull;
+use spin::Once;
 
 use super::hdr::EfiTableHeader;
 use crate::types::*;
 use crate::proto::*;
 use crate::tables::*;
 use crate::tables::rs::*;
+
+use crate::proto::console::*;
 
 use crate::safeptr::ThreadSafePtr;
 
@@ -30,19 +32,19 @@ pub const EFI_SYSTEM_TABLE_REVISION: UINT32 = EFI_2_100_SYSTEM_TABLE_REVISION;
 
 #[repr(C)]
 pub struct EfiSystemTable {
-    hdr: EfiTableHeader,
-    firmware_vendor: *mut CHAR16,
-    firmware_revision: UINT32,
-    console_in_handle: EfiHandle,
-    con_in: *mut EfiSimpleTextInputProtocol,
-    console_out_handle: EfiHandle,
-    con_out: *mut EfiSimpleTextOutputProtocol,
-    standard_error_handle: EfiHandle,
-    std_err: *mut EfiSimpleTextOutputProtocol,
-    runtime_services: *mut EfiRuntimeServices,
-    boot_services: *mut EfiBootServices,
-    number_of_table_entries: UINTN,
-    configuration_table: *mut EfiConfigurationTable,
+    pub hdr: EfiTableHeader,
+    pub firmware_vendor: *mut CHAR16,
+    pub firmware_revision: UINT32,
+    pub console_in_handle: EfiHandle,
+    pub con_in: *mut EfiSimpleTextInputProtocol,
+    pub console_out_handle: EfiHandle,
+    pub con_out: *mut EfiSimpleTextOutputProtocol,
+    pub standard_error_handle: EfiHandle,
+    pub std_err: *mut EfiSimpleTextOutputProtocol,
+    pub runtime_services: *mut EfiRuntimeServices,
+    pub boot_services: *mut EfiBootServices,
+    pub number_of_table_entries: UINTN,
+    pub configuration_table: *mut EfiConfigurationTable,
 }
 
 #[repr(C)]
@@ -52,21 +54,37 @@ pub struct EfiConfigurationTable {
 }
 
 pub struct SystemTable {
-    table: ThreadSafePtr<EfiSystemTable>,
+    pub table: ThreadSafePtr<EfiSystemTable>,
+    pub con_in: Once<SimpleTextInputProtocol>,
+    pub con_out: Once<SimpleTextOutputProtocol>,
 }
 
 impl SystemTable {
-    pub unsafe fn new(table: *mut EfiSystemTable) -> Option<Self> {
-        Some(SystemTable {
-            table: unsafe { ThreadSafePtr::new(table) }
-        })
+    pub fn boot_services(&self) -> &EfiBootServices {
+        unsafe { &*(*self.table.as_ptr()).boot_services }
     }
 
-    pub fn boot_services(&self) -> Option<NonNull<EfiBootServices>> {
-        unsafe { NonNull::new((*self.table.as_ptr()).boot_services) }
+    pub fn runtime_services(&self) -> &EfiRuntimeServices {
+        unsafe { &*(*self.table.as_ptr()).runtime_services }
     }
 
-    pub fn runtime_services(&self) -> Option<NonNull<EfiRuntimeServices>> {
-        unsafe { NonNull::new((*self.table.as_ptr()).runtime_services) }
+    pub fn con_in(&self) -> &SimpleTextInputProtocol {
+        self.con_in.call_once(|| {
+        // SAFETY: table pointer and con_in are guaranteed valid by UEFI spec
+        let raw_ptr = unsafe { &mut *(*self.table.as_ptr()).con_in };
+        unsafe { SimpleTextInputProtocol::new(raw_ptr) }
+        });
+        // unwrap() is guaranteed to be safe as we just called call_once()
+        self.con_in.get().unwrap()
+    }
+
+    pub fn con_out(&self) -> &SimpleTextOutputProtocol {
+        self.con_out.call_once(|| {
+        // SAFETY: table pointer and con_out are guaranteed valid by UEFI spec
+        let raw_ptr = unsafe { &mut *(*self.table.as_ptr()).con_out };
+        unsafe { SimpleTextOutputProtocol::new(raw_ptr) }
+        });
+        // unwrap() is guaranteed to be safe as we just called call_once()
+        self.con_out.get().unwrap()
     }
 }

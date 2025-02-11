@@ -159,3 +159,13 @@ impl EfiStatus {
         *self == EfiStatus::EfiSuccess
     }
 }
+
+#[repr(C)]
+pub struct SimpleTextOutputMode {
+    max_mode: INT32,
+    mode: INT32,
+    attribute: INT32,
+    cursor_column: INT32,
+    cursor_row: INT32,
+    cursor_visible: BOOLEAN,
+}
